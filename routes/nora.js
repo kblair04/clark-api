@@ -16,32 +16,33 @@ const GROCERY_DB = process.env.GROCERY_DATABASE_ID;
 router.get('/recipes', async (req, res) => {
     try {
         console.log('Fetching recipes from Notion...');
+        
         const response = await notion.databases.query({
-            database_id: RECIPES_DB
+            database_id: '25216c6cc64080bc8599c30200dd1f77'  // Hardcode it first to test
         });
+        
+        console.log('Got response:', response.results.length, 'recipes');
         
         const recipes = response.results.map(page => ({
             id: page.id,
-            name: page.properties.Recipe?.title[0]?.text?.content || '',
-            category: page.properties.Category?.select?.name || '',
-            prepTime: page.properties['Prep Time']?.number || 0,
-            cookTime: page.properties['Cook Time']?.number || 0,
-            servings: page.properties.Servings?.number || 0,
-            ingredients: page.properties.Ingredients?.rich_text[0]?.text?.content || '',
-            instructions: page.properties.Instructions?.rich_text[0]?.text?.content || '',
-            cost: page.properties['Cost Estimate']?.number || 0
+            // Use optional chaining for safety
+            name: page.properties?.Recipe?.title?.[0]?.text?.content || 'Unnamed',
+            category: page.properties?.Category?.select?.name || '',
+            prepTime: page.properties?.['Prep Time']?.number || 0,
         }));
         
-        res.json({ 
+        res.json({
             success: true,
             count: recipes.length,
-            recipes 
+            recipes
         });
     } catch (error) {
-        console.error('Error fetching recipes:', error);
-        res.status(500).json({ 
+        console.error('Detailed error:', error);
+        res.status(500).json({
             success: false,
-            error: error.message 
+            error: error.message,
+            code: error.code,
+            status: error.status
         });
     }
 });
