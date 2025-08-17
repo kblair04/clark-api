@@ -102,31 +102,6 @@ async function getFamilyData() {
       error: 'Using fallback data - Notion connection failed'
     };
   }
-}
-    // Get active agents (we'll connect to real Notion data later)
-    const agents = [
-      { name: 'Nora', role: 'Nutritionist', budget_authority: 150, status: 'Active' },
-      { name: 'Oz', role: 'Order Taker', budget_authority: 300, status: 'Active' },
-      { name: 'Sage', role: 'Scheduler', budget_authority: 100, status: 'Active' }
-    ];
-
-    return {
-      clark: clarkData,
-      agents: agents,
-      family_priorities: ['Safety', 'Relationships', 'Budget', 'Growth', 'Convenience'],
-      last_updated: new Date().toISOString()
-    };
-  } catch (error) {
-    console.error('Error fetching family data:', error);
-    return {
-      clark: { name: 'Clark', budget_authority: 500, status: 'Active' },
-      agents: [],
-      family_priorities: ['Safety', 'Relationships', 'Budget', 'Growth', 'Convenience'],
-      last_updated: new Date().toISOString(),
-      error: 'Could not fetch live data'
-    };
-  }
-}
 
 // Process Clark's request with live data
 async function processClarkRequest(request, urgency, context, familyData) {
