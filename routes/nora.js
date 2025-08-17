@@ -4,7 +4,7 @@ const { Client } = require('@notionhq/client');
 
 // Initialize Notion client
 const notion = new Client({
-    auth: process.env.NOTION_API_KEY
+    auth: process.env.NOTION_TOKEN
 });
 
 // Database IDs from environment variables
