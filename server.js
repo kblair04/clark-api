@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { Client } = require('@notionhq/client');
 require('dotenv').config();
+const noraRoutes = require('./routes/nora');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,6 +10,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use('/nora', noraRoutes);
 
 // Initialize Notion client
 const notion = new Client({
