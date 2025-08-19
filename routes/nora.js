@@ -71,85 +71,47 @@ router.get('/preferences', async (req, res) => {
     }
 });
 
-// POST save meal plan
+// POST save meal plan - ULTRA FLEXIBLE VERSION
 router.post('/meal-plan', async (req, res) => {
     try {
-        // LOG EXACTLY WHAT WE RECEIVE
-        console.log('=== MEAL PLAN REQUEST ===');
-        console.log('Full request body:', JSON.stringify(req.body, null, 2));
-        console.log('========================');
+        console.log('Meal plan request received:', JSON.stringify(req.body));
         
-        const { weekStart, meals, totalCost, nutritionSummary } = req.body;
+        // Get whatever was sent
+        const weekStart = req.body.weekStart || req.body.week_start || new Date().toISOString().split('T')[0];
+        const totalCost = req.body.totalCost || req.body.total_cost || 150;
         
-        // Format meals text - handle different possible formats
-        let mealText = 'Meal plan to be determined';
+        // Build a simple meal text from whatever we received
+        let mealText = 'Week meal plan saved';
         
-        // Try different ways meals might be sent
-        if (meals) {
-            if (typeof meals === 'string') {
-                // If meals is sent as a string, use it directly
-                mealText = meals;
-            } else if (Array.isArray(meals)) {
-                // If meals is an array
-                mealText = meals.join(' | ');
-            } else if (typeof meals === 'object') {
-                // If meals is an object with days
-                const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-                const mealParts = [];
-                for (const day of days) {
-                    if (meals[day]) {
-                        const m = meals[day];
-                        if (typeof m === 'string') {
-                            mealParts.push(`${day}: ${m}`);
-                        } else if (typeof m === 'object') {
-                            mealParts.push(`${day} - B: ${m.breakfast || 'TBD'}, L: ${m.lunch || 'TBD'}, D: ${m.dinner || 'TBD'}`);
-                        }
-                    }
-                }
-                if (mealParts.length > 0) {
-                    mealText = mealParts.join(' | ');
-                }
+        // Try to extract meal info from ANY field
+        const possibleMealsData = req.body.meals || req.body.meal_plan || req.body.mealPlan || req.body.data || req.body;
+        
+        if (possibleMealsData) {
+            // Just stringify whatever we got
+            if (typeof possibleMealsData === 'string') {
+                mealText = possibleMealsData;
+            } else {
+                mealText = JSON.stringify(possibleMealsData).substring(0, 2000); // Limit length
             }
         }
-        
-        const formattedDate = weekStart || new Date().toISOString().split('T')[0];
         
         const response = await notion.pages.create({
             parent: { database_id: MEAL_PLANS_DB },
             properties: {
                 'Week Name': {
-                    title: [{ 
-                        text: { 
-                            content: `Week of ${formattedDate}` 
-                        } 
-                    }]
+                    title: [{ text: { content: `Week of ${weekStart}` } }]
                 },
                 'Week Start': { 
-                    date: { 
-                        start: formattedDate 
-                    } 
+                    date: { start: weekStart } 
                 },
                 'Status': { 
-                    select: { 
-                        name: 'Planning' 
-                    } 
+                    select: { name: 'Planning' } 
                 },
                 'Total Cost': { 
-                    number: totalCost || 150 
+                    number: totalCost 
                 },
                 'Meals': { 
-                    rich_text: [{ 
-                        text: { 
-                            content: mealText
-                        } 
-                    }] 
-                },
-                'Nutrition Summary': {
-                    rich_text: [{ 
-                        text: { 
-                            content: nutritionSummary || 'Balanced nutrition planned' 
-                        } 
-                    }]
+                    rich_text: [{ text: { content: mealText } }] 
                 }
             }
         });
@@ -157,13 +119,13 @@ router.post('/meal-plan', async (req, res) => {
         res.json({ 
             success: true, 
             mealPlanId: response.id,
-            message: 'Meal plan saved successfully!'
+            message: 'Meal plan saved!' 
         });
     } catch (error) {
-        console.error('Error saving meal plan:', error);
+        console.error('Save error:', error);
         res.status(500).json({ 
             success: false,
-            error: error.message
+            error: error.message 
         });
     }
 });
