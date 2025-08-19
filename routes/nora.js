@@ -79,7 +79,7 @@ router.post('/meal-plan', async (req, res) => {
         const response = await notion.pages.create({
             parent: { database_id: MEAL_PLANS_DB },
             properties: {
-                'Week Name': {
+                'Week Name': {  // This field name is correct
                     title: [{ text: { content: `Week of ${weekStart}` } }]
                 },
                 'Week Start': { 
@@ -93,6 +93,9 @@ router.post('/meal-plan', async (req, res) => {
                 },
                 'Meals': { 
                     rich_text: [{ text: { content: JSON.stringify(meals) } }] 
+                },
+                'Nutrition Summary': {
+                    rich_text: [{ text: { content: nutritionSummary || '' } }]
                 }
             }
         });
@@ -127,11 +130,21 @@ router.post('/grocery-list', async (req, res) => {
         const response = await notion.pages.create({
             parent: { database_id: GROCERY_DB },
             properties: {
-                'List Name': {
+                'Name': {  // Changed from 'List Name' to 'Name'
                     title: [{ text: { content: `Groceries - ${weekStart}` } }]
                 },
-                'Estimated Total': { number: 185 },
-                'Status': { select: { name: 'Ready' } }
+                'Meal Plan Week': {  // Added this field
+                    rich_text: [{ text: { content: `Week of ${weekStart}` } }]
+                },
+                'Items By Section': {  // Changed from 'Items'
+                    rich_text: [{ text: { content: JSON.stringify(groceryList) } }]
+                },
+                'Estimated Total': { 
+                    number: 185 
+                },
+                'Status': { 
+                    select: { name: 'Draft' }  // Changed from 'Ready' to 'Draft'
+                }
             }
         });
         
@@ -142,6 +155,7 @@ router.post('/grocery-list', async (req, res) => {
             estimatedTotal: 185
         });
     } catch (error) {
+        console.error('Error creating grocery list:', error);
         res.status(500).json({ 
             success: false,
             error: error.message 
