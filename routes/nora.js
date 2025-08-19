@@ -74,27 +74,43 @@ router.get('/preferences', async (req, res) => {
 // POST save meal plan
 router.post('/meal-plan', async (req, res) => {
     try {
+        // LOG EXACTLY WHAT WE RECEIVE
+        console.log('=== MEAL PLAN REQUEST ===');
+        console.log('Full request body:', JSON.stringify(req.body, null, 2));
+        console.log('========================');
+        
         const { weekStart, meals, totalCost, nutritionSummary } = req.body;
         
-        // Format meals text properly
+        // Format meals text - handle different possible formats
         let mealText = 'Meal plan to be determined';
+        
+        // Try different ways meals might be sent
         if (meals) {
-            if (typeof meals === 'object') {
-                // Format the meals object into readable text
+            if (typeof meals === 'string') {
+                // If meals is sent as a string, use it directly
+                mealText = meals;
+            } else if (Array.isArray(meals)) {
+                // If meals is an array
+                mealText = meals.join(' | ');
+            } else if (typeof meals === 'object') {
+                // If meals is an object with days
                 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-                mealText = days.map(day => {
+                const mealParts = [];
+                for (const day of days) {
                     if (meals[day]) {
-                        return `${day} - B: ${meals[day].breakfast || 'TBD'}, L: ${meals[day].lunch || 'TBD'}, D: ${meals[day].dinner || 'TBD'}`;
+                        const m = meals[day];
+                        if (typeof m === 'string') {
+                            mealParts.push(`${day}: ${m}`);
+                        } else if (typeof m === 'object') {
+                            mealParts.push(`${day} - B: ${m.breakfast || 'TBD'}, L: ${m.lunch || 'TBD'}, D: ${m.dinner || 'TBD'}`);
+                        }
                     }
-                    return `${day} - TBD`;
-                }).join(' | ');
-            } else {
-                mealText = String(meals);
+                }
+                if (mealParts.length > 0) {
+                    mealText = mealParts.join(' | ');
+                }
             }
         }
-        
-        // Log what we received for debugging
-        console.log('Received meal plan data:', { weekStart, meals, totalCost, nutritionSummary });
         
         const formattedDate = weekStart || new Date().toISOString().split('T')[0];
         
@@ -144,11 +160,10 @@ router.post('/meal-plan', async (req, res) => {
             message: 'Meal plan saved successfully!'
         });
     } catch (error) {
-        console.error('Error saving meal plan - Full error:', error);
+        console.error('Error saving meal plan:', error);
         res.status(500).json({ 
             success: false,
-            error: error.message,
-            details: error
+            error: error.message
         });
     }
 });
