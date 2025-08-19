@@ -76,12 +76,26 @@ router.post('/meal-plan', async (req, res) => {
     try {
         const { weekStart, meals, totalCost, nutritionSummary } = req.body;
         
-        // Create a meal text string with default if meals is undefined
-        const mealText = meals ? 
-            (typeof meals === 'object' ? JSON.stringify(meals) : String(meals)) : 
-            'Meal plan to be determined';
+        // Format meals text properly
+        let mealText = 'Meal plan to be determined';
+        if (meals) {
+            if (typeof meals === 'object') {
+                // Format the meals object into readable text
+                const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                mealText = days.map(day => {
+                    if (meals[day]) {
+                        return `${day} - B: ${meals[day].breakfast || 'TBD'}, L: ${meals[day].lunch || 'TBD'}, D: ${meals[day].dinner || 'TBD'}`;
+                    }
+                    return `${day} - TBD`;
+                }).join(' | ');
+            } else {
+                mealText = String(meals);
+            }
+        }
         
-        // Format date properly
+        // Log what we received for debugging
+        console.log('Received meal plan data:', { weekStart, meals, totalCost, nutritionSummary });
+        
         const formattedDate = weekStart || new Date().toISOString().split('T')[0];
         
         const response = await notion.pages.create({
@@ -110,7 +124,7 @@ router.post('/meal-plan', async (req, res) => {
                 'Meals': { 
                     rich_text: [{ 
                         text: { 
-                            content: mealText  // Now guaranteed to have a value
+                            content: mealText
                         } 
                     }] 
                 },
