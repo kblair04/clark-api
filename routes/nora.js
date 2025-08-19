@@ -15,17 +15,12 @@ const GROCERY_DB = process.env.GROCERY_DATABASE_ID;
 // GET all recipes from Notion
 router.get('/recipes', async (req, res) => {
     try {
-        console.log('Fetching recipes from Notion...');
-        
         const response = await notion.databases.query({
-            database_id: '25216c6cc64080bc8599c30200dd1f77'  // Hardcode it first to test
+            database_id: RECIPES_DB
         });
-        
-        console.log('Got response:', response.results.length, 'recipes');
         
         const recipes = response.results.map(page => ({
             id: page.id,
-            // Use optional chaining for safety
             name: page.properties?.Recipe?.title?.[0]?.text?.content || 'Unnamed',
             category: page.properties?.Category?.select?.name || '',
             prepTime: page.properties?.['Prep Time']?.number || 0,
@@ -37,12 +32,9 @@ router.get('/recipes', async (req, res) => {
             recipes
         });
     } catch (error) {
-        console.error('Detailed error:', error);
         res.status(500).json({
             success: false,
-            error: error.message,
-            code: error.code,
-            status: error.status
+            error: error.message
         });
     }
 });
@@ -71,114 +63,6 @@ router.get('/preferences', async (req, res) => {
     }
 });
 
-// POST save meal plan - ULTRA FLEXIBLE VERSION
-router.post('/meal-plan', async (req, res) => {
-    try {
-        console.log('Meal plan request received:', JSON.stringify(req.body));
-        
-        // Get whatever was sent
-        const weekStart = req.body.weekStart || req.body.week_start || new Date().toISOString().split('T')[0];
-        const totalCost = req.body.totalCost || req.body.total_cost || 150;
-        
-        // Build a simple meal text from whatever we received
-        let mealText = 'Week meal plan saved';
-        
-        // Try to extract meal info from ANY field
-        const possibleMealsData = req.body.meals || req.body.meal_plan || req.body.mealPlan || req.body.data || req.body;
-        
-        if (possibleMealsData) {
-            // Just stringify whatever we got
-            if (typeof possibleMealsData === 'string') {
-                mealText = possibleMealsData;
-            } else {
-                mealText = JSON.stringify(possibleMealsData).substring(0, 2000); // Limit length
-            }
-        }
-        
-        const response = await notion.pages.create({
-            parent: { database_id: MEAL_PLANS_DB },
-            properties: {
-                'Week Name': {
-                    title: [{ text: { content: `Week of ${weekStart}` } }]
-                },
-                'Week Start': { 
-                    date: { start: weekStart } 
-                },
-                'Status': { 
-                    select: { name: 'Planning' } 
-                },
-                'Total Cost': { 
-                    number: totalCost 
-                },
-                'Meals': { 
-                    rich_text: [{ text: { content: mealText } }] 
-                }
-            }
-        });
-        
-        res.json({ 
-            success: true, 
-            mealPlanId: response.id,
-            message: 'Meal plan saved!' 
-        });
-    } catch (error) {
-        console.error('Save error:', error);
-        res.status(500).json({ 
-            success: false,
-            error: error.message 
-        });
-    }
-});
-
-// POST generate grocery list
-router.post('/grocery-list', async (req, res) => {
-    try {
-        const { weekStart } = req.body;
-        
-        // Simplified grocery list generation
-        const groceryList = {
-            produce: ["Lettuce", "Tomatoes", "Onions", "Peppers"],
-            proteins: ["Chicken", "Beef", "Salmon", "Eggs"],
-            dairy: ["Milk", "Cheese", "Yogurt"],
-            pantry: ["Rice", "Pasta", "Oil", "Spices"]
-        };
-        
-        const response = await notion.pages.create({
-            parent: { database_id: GROCERY_DB },
-            properties: {
-                'Name': {  // Changed from 'List Name' to 'Name'
-                    title: [{ text: { content: `Groceries - ${weekStart}` } }]
-                },
-                'Meal Plan Week': {  // Added this field
-                    rich_text: [{ text: { content: `Week of ${weekStart}` } }]
-                },
-                'Items By Section': {  // Changed from 'Items'
-                    rich_text: [{ text: { content: JSON.stringify(groceryList) } }]
-                },
-                'Estimated Total': { 
-                    number: 185 
-                },
-                'Status': { 
-                    select: { name: 'Draft' }  // Changed from 'Ready' to 'Draft'
-                }
-            }
-        });
-        
-        res.json({
-            success: true,
-            groceryListId: response.id,
-            items: groceryList,
-            estimatedTotal: 185
-        });
-    } catch (error) {
-        console.error('Error creating grocery list:', error);
-        res.status(500).json({ 
-            success: false,
-            error: error.message 
-        });
-    }
-});
-
 // POST coordinate with Clark
 router.post('/coordinate-clark', async (req, res) => {
     try {
@@ -194,37 +78,6 @@ router.post('/coordinate-clark', async (req, res) => {
             success: false,
             error: error.message 
         });
-    }
-});
-
-// POST super simple meal plan save
-router.post('/meal-plan-simple', async (req, res) => {
-    try {
-        // Just save whatever we get
-        const response = await notion.pages.create({
-            parent: { database_id: MEAL_PLANS_DB },
-            properties: {
-                'Week Name': {
-                    title: [{ text: { content: 'Week Plan' } }]
-                },
-                'Week Start': { 
-                    date: { start: '2025-11-03' } 
-                },
-                'Status': { 
-                    select: { name: 'Planning' } 
-                },
-                'Total Cost': { 
-                    number: 150 
-                },
-                'Meals': { 
-                    rich_text: [{ text: { content: 'Meal plan data received' } }] 
-                }
-            }
-        });
-        
-        res.json({ success: true });
-    } catch (error) {
-        res.json({ success: false, error: error.message });
     }
 });
 
