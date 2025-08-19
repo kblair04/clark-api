@@ -47,6 +47,57 @@ router.get('/recipes', async (req, res) => {
     }
 });
 
+});
+
+// ADD THIS NEW TEST ENDPOINT HERE (starting around line 50)
+router.get('/test-auth', async (req, res) => {
+    try {
+        // Test 1: Can we authenticate?
+        const me = await notion.users.me();
+        
+        // Test 2: Can we list users?
+        const users = await notion.users.list();
+        
+        // Test 3: Can we retrieve the specific database?
+        let dbTest = { success: false };
+        try {
+            const db = await notion.databases.retrieve({
+                database_id: '25216c6cc64080bc8599c30200dd1f77'
+            });
+            dbTest = {
+                success: true,
+                title: db.title[0]?.plain_text || 'No title'
+            };
+        } catch (dbError) {
+            dbTest = {
+                success: false,
+                error: dbError.message,
+                code: dbError.code
+            };
+        }
+        
+        res.json({ 
+            auth: {
+                success: true,
+                workspace: me.bot?.workspace_name || 'Unknown',
+                type: me.type
+            },
+            users: {
+                count: users.results.length
+            },
+            database: dbTest
+        });
+    } catch (error) {
+        res.json({ 
+            auth: {
+                success: false,
+                error: error.message,
+                code: error.code
+            }
+        });
+    }
+});
+
 // GET family preferences
 router.get('/preferences', async (req, res) => {
     try {
