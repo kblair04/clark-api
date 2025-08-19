@@ -76,26 +76,50 @@ router.post('/meal-plan', async (req, res) => {
     try {
         const { weekStart, meals, totalCost, nutritionSummary } = req.body;
         
+        // Create a meal text string with default if meals is undefined
+        const mealText = meals ? 
+            (typeof meals === 'object' ? JSON.stringify(meals) : String(meals)) : 
+            'Meal plan to be determined';
+        
+        // Format date properly
+        const formattedDate = weekStart || new Date().toISOString().split('T')[0];
+        
         const response = await notion.pages.create({
             parent: { database_id: MEAL_PLANS_DB },
             properties: {
-                'Week Name': {  // This field name is correct
-                    title: [{ text: { content: `Week of ${weekStart}` } }]
+                'Week Name': {
+                    title: [{ 
+                        text: { 
+                            content: `Week of ${formattedDate}` 
+                        } 
+                    }]
                 },
                 'Week Start': { 
-                    date: { start: weekStart } 
+                    date: { 
+                        start: formattedDate 
+                    } 
                 },
                 'Status': { 
-                    select: { name: 'Planning' } 
+                    select: { 
+                        name: 'Planning' 
+                    } 
                 },
                 'Total Cost': { 
-                    number: totalCost || 0
+                    number: totalCost || 150 
                 },
                 'Meals': { 
-                    rich_text: [{ text: { content: JSON.stringify(meals) } }] 
+                    rich_text: [{ 
+                        text: { 
+                            content: mealText  // Now guaranteed to have a value
+                        } 
+                    }] 
                 },
                 'Nutrition Summary': {
-                    rich_text: [{ text: { content: nutritionSummary || '' } }]
+                    rich_text: [{ 
+                        text: { 
+                            content: nutritionSummary || 'Balanced nutrition planned' 
+                        } 
+                    }]
                 }
             }
         });
@@ -106,10 +130,11 @@ router.post('/meal-plan', async (req, res) => {
             message: 'Meal plan saved successfully!'
         });
     } catch (error) {
-        console.error('Error saving meal plan:', error);
+        console.error('Error saving meal plan - Full error:', error);
         res.status(500).json({ 
             success: false,
-            error: error.message 
+            error: error.message,
+            details: error
         });
     }
 });
