@@ -47,8 +47,6 @@ router.get('/recipes', async (req, res) => {
     }
 });
 
-});
-
 // ADD THIS NEW TEST ENDPOINT HERE (starting around line 50)
 router.get('/test-auth', async (req, res) => {
     try {
