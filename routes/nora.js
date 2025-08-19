@@ -81,4 +81,44 @@ router.post('/coordinate-clark', async (req, res) => {
     }
 });
 
+// POST save meal plan - SIMPLE VERSION
+router.post('/save-meal-plan', async (req, res) => {
+    try {
+        const { weekStart = new Date().toISOString().split('T')[0], mealText = 'Weekly meal plan' } = req.body;
+        
+        const response = await notion.pages.create({
+            parent: { database_id: MEAL_PLANS_DB },
+            properties: {
+                'Week Name': {
+                    title: [{ text: { content: `Week of ${weekStart}` } }]
+                },
+                'Week Start': { 
+                    date: { start: weekStart } 
+                },
+                'Status': { 
+                    select: { name: 'Planning' } 
+                },
+                'Total Cost': { 
+                    number: 150 
+                },
+                'Meals': { 
+                    rich_text: [{ text: { content: mealText } }] 
+                }
+            }
+        });
+        
+        res.json({ 
+            success: true, 
+            id: response.id,
+            message: 'Meal plan saved to Notion!' 
+        });
+    } catch (error) {
+        console.error('Save error:', error);
+        res.status(500).json({ 
+            success: false,
+            error: error.message 
+        });
+    }
+});
+
 module.exports = router;
