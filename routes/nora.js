@@ -121,4 +121,44 @@ router.post('/save-meal-plan', async (req, res) => {
     }
 });
 
+// POST save grocery list - SIMPLE VERSION
+router.post('/save-grocery-list', async (req, res) => {
+    try {
+        const { weekStart = new Date().toISOString().split('T')[0], groceryText = 'Weekly grocery list' } = req.body;
+        
+        const response = await notion.pages.create({
+            parent: { database_id: GROCERY_DB },
+            properties: {
+                'Name': {
+                    title: [{ text: { content: `Groceries - Week of ${weekStart}` } }]
+                },
+                'Meal Plan Week': {
+                    rich_text: [{ text: { content: `Week of ${weekStart}` } }]
+                },
+                'Items By Section': {
+                    rich_text: [{ text: { content: groceryText } }]
+                },
+                'Estimated Total': {
+                    number: 185
+                },
+                'Status': {
+                    select: { name: 'Draft' }
+                }
+            }
+        });
+        
+        res.json({ 
+            success: true, 
+            id: response.id,
+            message: 'Grocery list saved to Notion!' 
+        });
+    } catch (error) {
+        console.error('Save error:', error);
+        res.status(500).json({ 
+            success: false,
+            error: error.message 
+        });
+    }
+});
+
 module.exports = router;
